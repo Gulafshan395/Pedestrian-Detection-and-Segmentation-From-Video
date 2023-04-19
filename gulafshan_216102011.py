@@ -26,24 +26,21 @@ def detection(frame1,frame2):
     # Conversion from rgb to gray level,grey = 0.30*R + 0.59*G + 0.11*B
     gray_image = cv2.cvtColor(abs_diff, cv2.COLOR_BGR2GRAY)
 
-     # applying Gaussian Blurring on grey image,5*5 is kernel size, Intent to reduce the noise in the image 
+     # applying Gaussian Blurring on grey image.
     blurred_image = cv2.GaussianBlur(gray_image, (5,5), 0)
 
-    #Calculating Threshold ,a threshold is applied so that we get a nice shapes of moving object in black
-    #if pixel value is T>20 then assigned to 255 is white otherwise as black,we get thresh as threshold image
+    #Calculating Threshold ,a threshold is applied so that we get a nice shapes of moving object in black.
     _, thresh = cv2.threshold(blurred_image, 20, 255, cv2.THRESH_BINARY)
 
-    #dialation of image is used to make features of image prominent
+    #dialation of image.
     dilated_image = cv2.dilate(thresh, None, iterations=3)
 
-    """Finding contours of dilated image , contour retrieval mode and contour approximation method used
-    Each individual contour is a Numpy array of (x,y) coordinates of boundary points of the object.
-    It Returns the detected contours as a list of points and the contour hierarchy"""
+    #Finding contours of dilated image , contour retrieval mode and contour approximation method used.
     contours, _ = cv2.findContours(dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     
     for i in contours:
-        (x, y, w, h) = cv2.boundingRect(i) # (x,y) be the top-left coordinate of the rectangle and (w,h) be its width and height.
+        (x, y, w, h) = cv2.boundingRect(i)
 
         if cv2.contourArea(i) < 900:
                 continue
@@ -53,14 +50,14 @@ def detection(frame1,frame2):
 
 #for segmentation of image
 def segmentation(frame2,fgbg_image):
-    kernel = np.ones((4,4),np.uint8) # 4*4 ones kernel matrix
-    seg_image = np.zeros(frame2.shape, np.uint8) # array of shape frame2 filled with 0
+    kernel = np.ones((4,4),np.uint8)
+    seg_image = np.zeros(frame2.shape, np.uint8) 
 
-    fgmask = fgbg_image.apply(frame2)# applying subtractor on each frame2
-    fgmask = cv2.morphologyEx(fgmask , cv2.MORPH_OPEN, kernel) #OPEN and then CLOSE to get more smooth shapes
-    seg_image[:,:,0] = fgmask #Blue channel
-    seg_image[:,:,1] = fgmask #Green channel
-    seg_image[:,:,2] = fgmask #Red channel
+    fgmask = fgbg_image.apply(frame2)
+    fgmask = cv2.morphologyEx(fgmask , cv2.MORPH_OPEN, kernel)
+    seg_image[:,:,0] = fgmask 
+    seg_image[:,:,1] = fgmask 
+    seg_image[:,:,2] = fgmask
     result = cv2.bitwise_and(frame2, frame2, mask=fgmask)
     cv2.putText(seg_image, "Pedestrian Segmentation", (10, 20), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 3)
     cv2.putText(result, "Background Reduction", (10, 20), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 3)
@@ -74,14 +71,8 @@ def Pedestrian_detection(cap,out):
 
     #starting reading of the frames
     while cap.isOpened():
-        #explanation of cap read
-        #ret: This is a boolean value that is true if the frame is read successfully, else false
-        #frame1:  This is the actual frame that is read.
-        #This frame can be stored in a variable and can be used similar to how we loaded individual images using cv2.imread()
         ret, frame1 = cap.read()
         ret, frame2 = cap.read()
-
-        #if the frame is successfully read doing segmentation, detection on the frame
         if ret==True:
             seg,res = segmentation(frame2,fgbg_image)
             frame1 = detection(frame1,frame2)
@@ -102,21 +93,16 @@ def Pedestrian_detection(cap,out):
         else:
             break
 
-    cv2.destroyAllWindows() #destroy the window showing images
-    cap.release() # release the resources
+    cv2.destroyAllWindows() 
+    cap.release() 
     out.release()
 
 if __name__=="__main__":
     cap = cv2.VideoCapture('/content/drive/My Drive/Gulafhsan_project/input_video/vtest.avi')
 
-    #getting the width of the frame of the video
     frame_width = int( cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-
-    #getting the height of the frame of the video
     frame_height =int( cap.get( cv2.CAP_PROP_FRAME_HEIGHT))
-
-    #Encoding avi video works by setting the FOURCC code to ‘XVID’ 
-    #fourcc code is the sequence of bytes identify the data formats
+    
     fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
     out = cv2.VideoWriter("/content/drive/My Drive/new_output.mp4", fourcc, 5.0, (int((frame_width*2)),int((frame_height*2))))
     Pedestrian_detection(cap,out)
